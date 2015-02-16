@@ -1,17 +1,11 @@
-<!DOCTYPE html>
+{% extends 'rango/base.html' %}
 
-{% load static %}
+{% load staticfiles %}
 
-<html>
+{% block title %}{% endblock %}
 
-  <head>
-    <title>about</title>
-  </head>
-
-  <body>
+{% block body_block %}
     <h1>Static loaded "about"</h1>
-    <a href="/rango/">Home</a><br />
-    <img src="{% static '/media/titsandholes.jpg' %}" alt="carey pussy" />
-  </body>
-
-</html>
+    <h2>{{ user.username }}</h2>
+    <h3>Visits: {{ visits }}</h3>
+ {% endblock %}

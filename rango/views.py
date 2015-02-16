@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
@@ -17,15 +19,46 @@ def index(request):
     '''
     category_list = Category.objects.order_by('-likes')
     # For showing top 5 page views
-    page_list = Page.objects.order_by('-view')[:5]
+    page_list = Page.objects.order_by('-views')[:5]
     context_dict = {'categories': category_list, 'pages': page_list}
 
-    # Render the response and send it back.
-    return render(request, 'rango/index.html', context_dict)
+    visits = request.session.get('visits')
+    
+    if not visits:
+        visits = 1
+    reset_last_visit_time = False
+
+    last_visit = request.session.get('last_visit')
+    if last_visit:
+        last_visit_time = datetime.strptime(last_visit[:-7],
+                                            '%Y-%m-%d %H:%M:%S')
+        if (datetime.now() - last_visit_time).seconds > 0:
+            # ...reassign the value of the cookie to +1 what it was before
+            visits = visits + 1
+            # ...and update the last visit cookie, too.
+            reset_last_visit_time = True
+    else:
+        # Cookie last_visit doesn't exist, so create it
+        reset_last_visit_time = True
+
+        if reset_last_visit_time:
+            request.session['last_visit'] = str(datetime.now())
+            request.session['visits'] = visits
+        context_dict['visits'] = visits
+        
+    response = render(request, 'rango/index.html', context_dict)
+
+    # Return response back to the user
+    return response
 
 def about(request):
-
-    return render(request, 'rango/about.html',)
+    if request.session.get('visits'):
+        count = request.session.get('visits')
+    else:
+        count = 0
+    
+    context_dict = {'visits': count}
+    return render(request, 'rango/about.html', context_dict)
 
 
 def category(request, category_name_slug):
@@ -129,6 +162,7 @@ def add_page(request, category_name_slug):
     context_dict = {'form': form, 'category_name_slug': category_name_slug}
     return render(request, 'rango/add_page.html', context_dict)
 
+'''
 def register(request):
     # A boolean value telling the template whether the registration was
     # successful.Set to False initially. Code changes value to True
@@ -229,10 +263,12 @@ def user_login(request):
         # No context variables to pass to the template system, hence the
         # blank dictionary object...
         return render(request, 'rango/login.html', {})
-                  
+'''                  
 @login_required   # only registered users may use this function
 def restricted(request):
-    return HttpResponse('Since you are logged in you can see this text')
+    
+    rmessage = 'You are seeing this only because you have logged in'
+    return render(request, 'rango/restricted.html', {'rmessage': rmessage})
 
 @login_required   # only registered users may use this function
 def user_logout(request):
